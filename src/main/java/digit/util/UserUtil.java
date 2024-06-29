@@ -128,6 +128,7 @@ public class UserUtil {
     }
 
     public String getStateLevelTenant(String tenantId){
+
         return tenantId.split("\\.")[0];
     }
 

@@ -43,17 +43,18 @@ public class BirthRegistrationService {
     private Producer producer;
 
     public List<BirthRegistrationApplication> registerBtRequest(BirthRegistrationRequest birthRegistrationRequest) {
+        System.out.println("Register/create ");
         // Validate applications
-        validator.validateBirthApplication(birthRegistrationRequest);
+        validator.validateBirthApplication(birthRegistrationRequest); // Simply checks for NON-EMPTY TenantID
 
-        // Enrich applications
+        // Enrich applications -> {AUDIT details , uuid , reg id , application number }
         enrichmentUtil.enrichBirthApplication(birthRegistrationRequest);
 
-//         Enrich/Upsert user in upon birth registration
+//         Enrich/Upsert user in upon birth registration -> {Enriches Parents UUID }
         userService.callUserService(birthRegistrationRequest);
 //
-        // Initiate workflow for the new application
-//        workflowService.updateWorkflowStatus(birthRegistrationRequest);
+        // Initiate workflow for the new application -> { UPDATE STATUS from APPLY -> APPLIED }
+       workflowService.updateWorkflowStatus(birthRegistrationRequest);
 
         // Push the application to the topic for persister to listen and persist
         producer.push("save-bt-application", birthRegistrationRequest);
@@ -63,7 +64,6 @@ public class BirthRegistrationService {
     }
     public List<BirthRegistrationApplication> searchBtApplications(RequestInfo requestInfo, BirthApplicationSearchCriteria birthApplicationSearchCriteria) {
         // Fetch applications from database according to the given search criteria
-        System.out.println("Hi Searching");
         List<BirthRegistrationApplication> applications = birthRegistrationRepository.getApplications(birthApplicationSearchCriteria);
 
         // If no applications are found matching the given criteria, return an empty list
@@ -71,6 +71,7 @@ public class BirthRegistrationService {
             return new ArrayList<>();
 
         // Enrich mother and father of applicant objects
+        System.out.println("Enriching Applications"+ applications);
         applications.forEach(application -> {
             enrichmentUtil.enrichFatherApplicantOnSearch(application);
             enrichmentUtil.enrichMotherApplicantOnSearch(application);
@@ -84,18 +85,18 @@ public class BirthRegistrationService {
         BirthRegistrationApplication existingApplication = validator.validateApplicationExistence(birthRegistrationRequest.getBirthRegistrationApplications().get(0));
         existingApplication.setWorkflow(birthRegistrationRequest.getBirthRegistrationApplications().get(0).getWorkflow());
         log.info(existingApplication.toString());
-        birthRegistrationRequest.setBirthRegistrationApplications(Collections.singletonList(existingApplication));
+//        birthRegistrationRequest.setBirthRegistrationApplications(Collections.singletonList(existingApplication));
 
         // Enrich application upon update
         enrichmentUtil.enrichBirthApplicationUponUpdate(birthRegistrationRequest);
 
-//        workflowService.updateWorkflowStatus(birthRegistrationRequest);
+       workflowService.updateWorkflowStatus(birthRegistrationRequest);
+
+
 
         // Just like create request, update request will be handled asynchronously by the persister
         producer.push("update-bt-application", birthRegistrationRequest);
 
         return birthRegistrationRequest.getBirthRegistrationApplications().get(0);
-
-
     }
 }

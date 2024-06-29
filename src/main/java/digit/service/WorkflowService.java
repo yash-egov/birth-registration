@@ -34,15 +34,19 @@ public class WorkflowService {
     private BTRConfiguration config;
 
     public void updateWorkflowStatus(BirthRegistrationRequest birthRegistrationRequest) {
+//        System.out.println("Updating workflow status : " + birthRegistrationRequest);
+//        System.out.println("Updating workflow status : " + birthRegistrationRequest.getBirthRegistrationApplications());
+
         birthRegistrationRequest.getBirthRegistrationApplications().forEach(application -> {
             ProcessInstance processInstance = getProcessInstanceForBTR(application, birthRegistrationRequest.getRequestInfo());
             ProcessInstanceRequest workflowRequest = new ProcessInstanceRequest(birthRegistrationRequest.getRequestInfo(), Collections.singletonList(processInstance));
-            callWorkFlow(workflowRequest);
+            State curstate=callWorkFlow(workflowRequest);
+            System.out.println("update -> "+curstate);
+            application.getWorkflow().setStatus(curstate.getState());
         });
     }
 
     public State callWorkFlow(ProcessInstanceRequest workflowReq) {
-
         ProcessInstanceResponse response = null;
         StringBuilder url = new StringBuilder(config.getWfHost().concat(config.getWfTransitionPath()));
         Object optional = repository.fetchResult(url, workflowReq);
@@ -53,7 +57,11 @@ public class WorkflowService {
     private ProcessInstance getProcessInstanceForBTR(BirthRegistrationApplication application, RequestInfo requestInfo) {
         Workflow workflow = application.getWorkflow();
 
+//        System.out.println("Yash Workflow service.java : " + application);
+
         ProcessInstance processInstance = new ProcessInstance();
+
+
         processInstance.setBusinessId(application.getApplicationNumber());
         processInstance.setAction(workflow.getAction());
         processInstance.setModuleName("birth-services");
@@ -61,6 +69,7 @@ public class WorkflowService {
         processInstance.setBusinessService("BTR");
         processInstance.setDocuments(workflow.getDocuments());
         processInstance.setComment(workflow.getComments());
+
 
         if(!CollectionUtils.isEmpty(workflow.getAssignes())){
             List<User> users = new ArrayList<>();
@@ -73,6 +82,7 @@ public class WorkflowService {
 
             processInstance.setAssignes(users);
         }
+
 
         return processInstance;
 

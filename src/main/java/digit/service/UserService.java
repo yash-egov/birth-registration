@@ -14,6 +14,7 @@ import org.egov.tracer.model.CustomException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -162,7 +163,6 @@ public class UserService {
     private User updateUser(RequestInfo requestInfo,User user,User userFromSearch) {
 
         userFromSearch.setName(user.getName());
-
         StringBuilder uri = new StringBuilder(config.getUserHost())
                 .append(config.getUserContextPath())
                 .append(config.getUserUpdateEndpoint());
@@ -185,8 +185,10 @@ public class UserService {
 
         UserSearchRequest userSearchRequest =new UserSearchRequest();
         userSearchRequest.setActive(false);
-//        userSearchRequest.setUserType("CITIZEN");
+       // userSearchRequest.setUserType("CITIZEN");
         userSearchRequest.setTenantId(stateLevelTenant);
+
+        System.out.println("Searching for user from userService : - "+ userName + " ACCID " + accountId + " stateTI "+stateLevelTenant);
 
         if(StringUtils.isEmpty(accountId) && StringUtils.isEmpty(userName))
             return null;
@@ -197,7 +199,12 @@ public class UserService {
         if(!StringUtils.isEmpty(userName))
             userSearchRequest.setUserName(userName);
 
+//        System.out.println("Searching for user from userService : - "+ userName + " ACCID " + accountId);
+
         StringBuilder uri = new StringBuilder(config.getUserHost()).append(config.getUserSearchEndpoint());
+//        System.out.println("uri : "+uri);
+//        System.out.println("userUtils.userCall(userSearchRequest,uri): "+userUtils.userCall(userSearchRequest,uri).getResponseInfo());
+
         return userUtils.userCall(userSearchRequest,uri);
 
     }
